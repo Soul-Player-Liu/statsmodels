@@ -187,7 +187,7 @@ def adjust_subplots(**kwds):
 
 def irf_grid_plot(values, stderr, impcol, rescol, names, title,
                   signif=0.05, hlines=None, subplot_params=None,
-                  plot_params=None, figsize=(10,10), stderr_type='asym'):
+                  plot_params=None, figsize=(10,10), stderr_type='asym', ax=None):
     """
     Reusable function to make flexible grid plots of impulse responses and
     comulative effects
@@ -196,6 +196,12 @@ def irf_grid_plot(values, stderr, impcol, rescol, names, title,
     stderr : T x k x k
     hlines : k x k
     """
+    if ax is not None:
+        flag = True
+    else:
+        flag = False
+
+
     import matplotlib.pyplot as plt
 
     if subplot_params is None:
@@ -205,21 +211,28 @@ def irf_grid_plot(values, stderr, impcol, rescol, names, title,
 
     nrows, ncols, to_plot = _get_irf_plot_config(names, impcol, rescol)
 
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True,
-                             squeeze=False, figsize=figsize)
+    if not flag:
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True,
+                                squeeze=False, figsize=figsize)
 
-    # fill out space
-    adjust_subplots()
+        # fill out space
+        adjust_subplots()
 
-    fig.suptitle(title, fontsize=14)
+        fig.suptitle(title, fontsize=14)
 
-    subtitle_temp = r'%s$\rightarrow$%s'
+    if plot_params.get('max_lags') is not None:
+        subtitle_temp = r'%s$\rightarrow$%s  max_lags=%d'
+    else:
+        subtitle_temp = r'%s$\rightarrow$%s'
+
+
 
     k = len(names)
 
     rng = lrange(len(values))
     for (j, i, ai, aj) in to_plot:
-        ax = axes[ai][aj]
+        if not flag:
+            ax = axes[ai][aj]
 
         # HACK?
         if stderr is not None:
@@ -241,9 +254,20 @@ def irf_grid_plot(values, stderr, impcol, rescol, names, title,
             ax.axhline(hlines[i,j], color='k')
 
         sz = subplot_params.get('fontsize', 12)
-        ax.set_title(subtitle_temp % (names[j], names[i]), fontsize=sz)
+        if plot_params.get('max_lags') is not None:
+            ax.set_title(subtitle_temp % (names[j], names[i], plot_params['max_lags']), fontsize=sz)
+        else:
+            ax.set_title(subtitle_temp % (names[j], names[i]), fontsize=sz)
 
-    return fig
+        if plot_params.get('long_run_effects') is not None:
+            print(f'long_run_effects={round(plot_params["long_run_effects"], 4)}')
+            ax.annotate(f'长期效应：{round(plot_params["long_run_effects"], 4)}', xy=(0.95, 0.05), xycoords='axes fraction',
+                        fontsize=30, ha='right', va='bottom')
+
+    if not flag:
+        return fig
+    # else:
+    #     return ax
 
 
 def _get_irf_plot_config(names, impcol, rescol):
