@@ -89,7 +89,7 @@ class BaseIRAnalysis:
     def plot(self, orth=False, *, impulse=None, response=None,
              signif=0.05, plot_params=None, figsize=(10, 10),
              subplot_params=None, plot_stderr=True, stderr_type='asym',
-             repl=1000, seed=None, component=None):
+             repl=1000, seed=None, component=None, ax=None):
         """
         Plot impulse responses
 
@@ -125,16 +125,22 @@ class BaseIRAnalysis:
         model = self.model
         svar = self.svar
 
+        if ax is not None:
+            flag = True
+        else:
+            flag = False
+
         if orth and svar:
             raise ValueError("For SVAR system, set orth=False")
 
         irfs = self._choose_irfs(orth, svar)
         if orth:
-            title = 'Impulse responses (orthogonalized)'
+            title = ''
+            # title = 'Impulse responses (orthogonalized)'
         elif svar:
             title = 'Impulse responses (structural)'
         else:
-            title = 'Impulse responses'
+            title = ''
 
         if plot_stderr is False:
             stderr = None
@@ -164,13 +170,23 @@ class BaseIRAnalysis:
                                            seed=seed,
                                            component=component)
 
-        fig = plotting.irf_grid_plot(irfs, stderr, impulse, response,
+        if flag:
+            plotting.irf_grid_plot(irfs, stderr, impulse, response,
+                                   self.model.names, title, signif=signif,
+                                   subplot_params=subplot_params,
+                                   plot_params=plot_params,
+                                   figsize=figsize,
+                                   stderr_type=stderr_type, ax=ax)
+            # return ax
+
+        else:
+            fig = plotting.irf_grid_plot(irfs, stderr, impulse, response,
                                      self.model.names, title, signif=signif,
                                      subplot_params=subplot_params,
                                      plot_params=plot_params,
                                      figsize=figsize,
                                      stderr_type=stderr_type)
-        return fig
+            return fig
 
     def plot_cum_effects(self, orth=False, *, impulse=None, response=None,
                          signif=0.05, plot_params=None, figsize=(10, 10),
